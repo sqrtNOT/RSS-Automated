@@ -40,6 +40,15 @@ def update_rss_feeds():
 
 				title=entry.get('title') or None
 				link=entry.get('link') or None
+				links=entry.get('links') or None
+
+				#if we don't already have a valid video url loop through the links looking for an attached file
+				if(links != None and entry.get('guidislink') == False):
+					for linkdict in links:
+						type=linkdict.get('type') or None
+						if 'video' in type or 'audio' in type:
+							link=linkdict.get('href')
+							break
 
 				#niconico and youtube disagree on the format for 'published' so we convert published_parsed instead
 				rawtimestamp=entry.get('published_parsed') or None
