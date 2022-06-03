@@ -31,6 +31,13 @@ def update_rss_feeds():
 			continue #feed is broken, request failed, or no videos; skipping
 		else:
 			for entry in feed['entries']:
+				stats=entry.get('media_statistics') or None
+				if(stats != None):
+					views=stats.get('views') or None
+					print(views)
+					if(views == '0'):
+						continue #skip this video it's a livestream
+
 				title=entry.get('title') or None
 				link=entry.get('link') or None
 
