@@ -7,57 +7,6 @@ This function essentially does 3 things for every feed in the database:
 	2. fetch and parse the RSS data using feedparser
 	3. push the new entries into the videos table in the database
 """
-def update_rss_feeds():
-	import feedparser
-	import mysql.connector
-	import re
-	from datetime import datetime
-	from time import mktime
-
-	#database setup
-	conn=mysql.connector.connect(user='claws',password='B7VKx53vi0Ldx29BD5h1vpGozsfGBU3ydxCm41QM9jR3UjIk',host='localhost',database='rss')
-	cursor=conn.cursor()
-
-	#get the feed/channel data we need using previously setup channel tags
-	cursor.execute(r"select channel_id, url from channels join tags using (channel_id) where tag='video' or tag='audio'")
-	data=cursor.fetchall()
-
-	#create a feedparser object for every channel
-	feeds = [(channel_id, feedparser.parse(url),) for channel_id, url in data]
-
-	#parse every feed and add the data to the videos table
-	for (channel_id, feed) in feeds:
-		if feed.get('status') != 200 or feed.get('bozo') != False or feed.get('bozo_exception') != None or feed.get('entries')==[]:
-			continue #feed is broken, request failed, or no videos; skipping
-		else:
-			for entry in feed['entries']:
-				stats=entry.get('media_statistics') or None
-				if(stats != None):
-					views=stats.get('views') or None
-					print(views)
-					if(views == '0'):
-						continue #skip this video it's a livestream
-
-				title=entry.get('title') or None
-				link=entry.get('link') or None
-				links=entry.get('links') or None
-
-				#if we don't already have a valid video url loop through the links looking for an attached file
-				if(links != None and entry.get('guidislink') == False):
-					for linkdict in links:
-						type=linkdict.get('type') or None
-						if 'video' in type or 'audio' in type:
-							link=linkdict.get('href')
-							break
-
-				#niconico and youtube disagree on the format for 'published' so we convert published_parsed instead
-				rawtimestamp=entry.get('published_parsed') or None
-				published = datetime.fromtimestamp(mktime(rawtimestamp)).isoformat()
-
-				cursor.execute(r'insert ignore into videos (video_url, channel_id, video_title, video_date) values (%s,%s,%s,%s)',
-									  (link, channel_id, title, published))
-	conn.commit()
-
 with DAG(
 	'RSS_parser',
 	default_args={
@@ -69,9 +18,61 @@ with DAG(
 	start_date=datetime(2022, 5, 30),
 	catchup=False,
 ) as dag:
-	t1 = PythonOperator(
+
+	def update_rss_feeds():
+		import feedparser
+		import mysql.connector
+		import re
+		from datetime import datetime
+		from time import mktime
+
+		#database setup
+		conn=mysql.connector.connect(user='claws',password='B7VKx53vi0Ldx29BD5h1vpGozsfGBU3ydxCm41QM9jR3UjIk',host='localhost',database='rss')
+		cursor=conn.cursor()
+
+		#get the feed/channel data we need using previously setup channel tags
+		cursor.execute(r"select channel_id, url from channels join tags using (channel_id) where tag='video' or tag='audio'")
+		data=cursor.fetchall()
+
+		#create a feedparser object for every channel
+		feeds = [(channel_id, feedparser.parse(url),) for channel_id, url in data]
+
+		#parse every feed and add the data to the videos table
+		for (channel_id, feed) in feeds:
+			if feed.get('status') != 200 or feed.get('bozo') != False or feed.get('bozo_exception') != None or feed.get('entries')==[]:
+				continue #feed is broken, request failed, or no videos; skipping
+			else:
+				for entry in feed['entries']:
+					stats=entry.get('media_statistics') or None
+					if(stats != None):
+						views=stats.get('views') or None
+						print(views)
+						if(views == '0'):
+							continue #skip this video it's a livestream
+
+					title=entry.get('title') or None
+					link=entry.get('link') or None
+					links=entry.get('links') or None
+
+					#if we don't already have a valid video url loop through the links looking for an attached file
+					if(links != None and entry.get('guidislink') == False):
+						for linkdict in links:
+							type=linkdict.get('type') or None
+							if 'video' in type or 'audio' in type:
+								link=linkdict.get('href')
+								break
+
+					#niconico and youtube disagree on the format for 'published' so we convert published_parsed instead
+					rawtimestamp=entry.get('published_parsed') or None
+					published = datetime.fromtimestamp(mktime(rawtimestamp)).isoformat()
+
+					cursor.execute(r'insert ignore into videos (video_url, channel_id, video_title, video_date) values (%s,%s,%s,%s)',
+										  (link, channel_id, title, published))
+		conn.commit()
+
+	update_rss = PythonOperator(
 		task_id='update_rss_feeds',
 		python_callable=update_rss_feeds,
 )
 
-update_rss_feeds
+update_rss
