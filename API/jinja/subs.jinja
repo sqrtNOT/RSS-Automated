@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+<head>
+	<title>My Webpage</title>
+</head>
+
+
+<body>
+	<table id='subscriptions'>
+	<tr>
+		{% for key in videos.0.keys() %}
+		<th> {{ key }}</th>
+		{% endfor %}
+	</tr>
+	{% for video in videos %}
+		<tr>
+		<td><a href="{{ video.url }}">{{ video.url }}</a> </td>
+		<td> {{ video.video }} </td>
+		<td> {{ video.channel }} </td>
+		</tr>
+	{% endfor %}
+
+</body>
+</html>
+
