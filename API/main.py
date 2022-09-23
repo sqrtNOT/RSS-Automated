@@ -9,12 +9,13 @@ app = FastAPI()
 templates = Jinja2Templates(directory='jinja/')
 
 # database
-user='subsapi'
-password='nLzM6KaoC50tOuKUPTvFl3WjIRYI4vac63vLwbpeCQvF5T6k'
-host='localhost'
-database='rss'
+user = 'subsapi'
+password = 'nLzM6KaoC50tOuKUPTvFl3WjIRYI4vac63vLwbpeCQvF5T6k'
+host = 'localhost'
+database = 'rss'
 # regex
 youtube_matcher = re.compile("https://www.youtube.com/channel/([^/]+)")
+
 
 @app.get("/")
 def root(request: Request):
@@ -71,4 +72,3 @@ def add_rss(url, name, alt_name=None, status_code=201):
             return {"status": "success", "url": url, "name": name, "alt_name": alt_name, }
     else:
         return {"status": "Invalid arguments"}
-
