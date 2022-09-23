@@ -15,7 +15,6 @@ cursor = conn.cursor()
 # regex
 youtube_matcher = re.compile("https://www.youtube.com/channel/([^/]+)")
 
-
 @app.get("/")
 def root(request: Request):
     conn = mysql.connector.connect(user='subsapi', password='nLzM6KaoC50tOuKUPTvFl3WjIRYI4vac63vLwbpeCQvF5T6k', host='localhost', database='rss')
@@ -51,3 +50,22 @@ def add_channel(url, name, alt_name=None, status_code=201):
             return {"status": "success", "url": url, "name": name, "alt_name": alt_name, }
     else:
         return {"status": "Invalid arguments"}
+@app.get("/add")
+def add_rss(url, name, alt_name=None, status_code=201):
+    conn = mysql.connector.connect(user='subsapi', password='nLzM6KaoC50tOuKUPTvFl3WjIRYI4vac63vLwbpeCQvF5T6k', host='localhost', database='rss')
+    cursor = conn.cursor()
+    if name and url:
+        cursor.execute("select * from channels where url = %s;", (url,))
+        duplicate = cursor.fetchall()
+        if duplicate:
+            return {"status": "Value already in database",
+                    "dupe": duplicate,
+                    status_code: 400}
+        else:
+            cursor.execute("insert into channels (url, channel_name, alt_name) values (%s, %s, %s)",
+                           (url, name, alt_name))
+            conn.commit()
+            return {"status": "success", "url": url, "name": name, "alt_name": alt_name, }
+    else:
+        return {"status": "Invalid arguments"}
+
