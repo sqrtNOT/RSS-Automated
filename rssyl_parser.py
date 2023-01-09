@@ -17,39 +17,55 @@ The actual feed is for the Grant Sanderson youtube channel and 3Blue1Brown, acad
 from bs4 import BeautifulSoup
 import mysql.connector
 
-#database setup
-conn=mysql.connector.connect(user='claws',password='B7VKx53vi0Ldx29BD5h1vpGozsfGBU3ydxCm41QM9jR3UjIk',host='localhost',database='rss')
-cursor=conn.cursor()
+# database setup
+conn = mysql.connector.connect(
+    user="claws",
+    password="B7VKx53vi0Ldx29BD5h1vpGozsfGBU3ydxCm41QM9jR3UjIk",
+    host="localhost",
+    database="rss",
+)
+cursor = conn.cursor()
 
-#parsing the rssyl xml file
-path_to_list="~/.claws-mail/folderlist.xml"
-folderlist=open(path_to_list, 'r').read()
-soup=BeautifulSoup(folderlist,'lxml')
-folder=soup.find('folder',type="rssyl")
-feeds=folder.find_all('folderitem')
+# parsing the rssyl xml file
+path_to_list = "~/.claws-mail/folderlist.xml"
+folderlist = open(path_to_list, "r").read()
+soup = BeautifulSoup(folderlist, "lxml")
+folder = soup.find("folder", type="rssyl")
+feeds = folder.find_all("folderitem")
 
-#feed has been flattened and all the data we care about is in a list of folderitem dictionary objects
+# feed has been flattened and all the data we care about is in a list of folderitem dictionary objects
 for feed in feeds:
-	try:
-		uri=feed['uri']
-	except:continue #no uri in tree so it's a folder; skipping
+    try:
+        uri = feed["uri"]
+    except:
+        continue  # no uri in tree so it's a folder; skipping
 
-	name=feed['name']
-	try:
-		canonical_name=feed['official_title']
-	except:title=name
+    name = feed["name"]
+    try:
+        canonical_name = feed["official_title"]
+    except:
+        title = name
 
-	#ignore the root item and the actual channel name for tagging
-	tags=feed['path'].split('/')[1:-1]
+    # ignore the root item and the actual channel name for tagging
+    tags = feed["path"].split("/")[1:-1]
 
-	cursor.execute(r"insert into channels (url, channel_name, alt_name) values (%s,%s,%s)",(str(uri),str(canonical_name),str(name)))
-	cursor.execute(r"select channel_id from channels where url = %s ",(str(uri),))
+    cursor.execute(
+        r"insert into channels (url, channel_name, alt_name) values (%s,%s,%s)",
+        (str(uri), str(canonical_name), str(name)),
+    )
+    cursor.execute(r"select channel_id from channels where url = %s ", (str(uri),))
 
-	#there should only be one value but if duplicate feeds existed we don't want to fail on that case so fetchall
-	channel_id=cursor.fetchall()[0][0]
+    # there should only be one value but if duplicate feeds existed we don't want to fail on that case so fetchall
+    channel_id = cursor.fetchall()[0][0]
 
-	for tag in tags:
-		cursor.execute(r"insert into tags (channel_id, tag) values (%s,%s)",(str(channel_id),str(tag),))
+    for tag in tags:
+        cursor.execute(
+            r"insert into tags (channel_id, tag) values (%s,%s)",
+            (
+                str(channel_id),
+                str(tag),
+            ),
+        )
 
-#commit changes at the end only if everything worked so we never write bad data
+# commit changes at the end only if everything worked so we never write bad data
 conn.commit()
