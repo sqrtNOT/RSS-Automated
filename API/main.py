@@ -5,7 +5,6 @@ from fastapi.templating import Jinja2Templates
 import json
 import mysql.connector
 import re
-import uvicorn
 
 # api
 app = FastAPI()
@@ -101,4 +100,5 @@ def add_rss(url, name, alt_name=None, status_code=201):
 
 
 if __name__ == "__main__":
+    import uvicorn
     uvicorn.run("main:app", port=8000)
