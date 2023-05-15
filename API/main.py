@@ -33,9 +33,12 @@ def root(request: Request):
             videos.append(json.loads(item[0]))
     return templates.TemplateResponse('subs.jinja', {'request': request, 'videos': videos})
 
+@app.get("/add")
+def add(request: Request):
+    return templates.TemplateResponse('form.jinja', {'request': request})
 
 @app.get("/add/youtube")
-def add_channel(url, name, alt_name=None, status_code=201):
+def add_youtube(url, name, alt_name=None, status_code=201):
     conn = mysql.connector.connect(user=user, password=password, host=host, database=database)
     cursor = conn.cursor()
     valid_url = youtube_matcher.match(url)
@@ -57,7 +60,7 @@ def add_channel(url, name, alt_name=None, status_code=201):
 
 
 @app.get("/add/niconico")
-def add_channel(url, name, alt_name=None, status_code=201):
+def add_niconico(url, name, alt_name=None, status_code=201):
     conn = mysql.connector.connect(user=user, password=password, host=host, database=database)
     cursor = conn.cursor()
     valid_url = nico_matcher.match(url)
@@ -78,8 +81,13 @@ def add_channel(url, name, alt_name=None, status_code=201):
         return {"status": "Invalid arguments"}
 
 
-@app.get("/add")
+@app.get("/add/rss")
 def add_rss(url, name, alt_name=None, status_code=201):
+    if "youtube" in url:
+        return add_youtube(url=url, name=name, alt_name=alt_name, status_code=status_code)
+    if "nico" in url:
+        return add_niconico(url=url, name=name, alt_name=alt_name, status_code=status_code)
+
     conn = mysql.connector.connect(user=user, password=password, host=host, database=database)
     cursor = conn.cursor()
     if name and url:
@@ -97,6 +105,7 @@ def add_rss(url, name, alt_name=None, status_code=201):
     else:
         return {"status": "Invalid arguments"}
 
+
 @app.get("/clear")
 def clear_rss():
     conn = mysql.connector.connect(user=user, password=password, host=host, database=database)
@@ -104,7 +113,6 @@ def clear_rss():
     cursor.execute("update videos set status='Watched'  where status is null;")
     conn.commit()
     return {"status": "success"}
-
 
 if __name__ == "__main__":
     import uvicorn
