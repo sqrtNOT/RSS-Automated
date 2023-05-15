@@ -2,11 +2,24 @@
 <html lang="en">
 <html>
 <head>
-	<title>My Webpage</title>
+	<title>RSS feeds</title>
 </head>
 
 
 <body>
+	<script>
+		function makeRequest(){
+		xhr = new XMLHttpRequest();
+		xhr.open("GET", "clear", true);
+		xhr.send();
+		return false;
+		}
+
+	</script>
+	<form onsubmit="return makeRequest()">
+		<input class="submit" type="submit" value="clear subscriptions">
+	</form>
+	<a href="/add">Subscribe to a new channel</a>
 	<table id='subscriptions'>
 	<tr>
 		{% for key in videos.0.keys() %}
@@ -15,7 +28,7 @@
 	</tr>
 	{% for video in videos %}
 		<tr>
-		<td><a href="{{ video.url }}">{{ video.url }}</a> </td>
+		<td>yt-dlp <a href="{{ video.url }}">{{ video.url }}</a> </td>
 		<td> {{ video.video }} </td>
 		<td> {{ video.channel }} </td>
 		</tr>
