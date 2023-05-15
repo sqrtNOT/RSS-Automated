@@ -97,6 +97,13 @@ def add_rss(url, name, alt_name=None, status_code=201):
     else:
         return {"status": "Invalid arguments"}
 
+@app.get("/clear")
+def clear_rss():
+    conn = mysql.connector.connect(user=user, password=password, host=host, database=database)
+    cursor = conn.cursor()
+    cursor.execute("update videos set status='Watched'  where status is null;")
+    conn.commit()
+    return {"status": "success"}
 
 
 if __name__ == "__main__":
